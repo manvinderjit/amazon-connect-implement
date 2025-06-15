@@ -22,6 +22,7 @@ const dynamo = DynamoDBDocumentClient.from(client);
 const tableName = process.env.TABLE_NAME;
 
 async function processMessageAsync(message: SQSRecord): Promise<void> {
+  // TODO: Use UUID here or in the first lambda
   let insertID = "";
 
   try {
@@ -52,6 +53,7 @@ async function processMessageAsync(message: SQSRecord): Promise<void> {
       console.error("Validation failed:", err.errors);
       throw err;
     } else {
+      // Production: Send to DLQ or log for monitoring
       console.error("Failed to process message:", {
         errorMessage: err.message,
         stack: err.stack,
@@ -71,12 +73,12 @@ export const handler: Handler<SQSEvent, void> = async (
     try {
       await processMessageAsync(message);
     } catch (err: any) {
+      // Production: Send to DLQ or log for monitoring
       console.error("Error processing individual message", {
         messageId: message.messageId,
         body: message.body,
         error: err.message,
       });
-      // Optional: Send to DLQ or alert
     }
   }
 };
