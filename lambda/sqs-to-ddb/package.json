@@ -1,0 +1,41 @@
+{
+  "name": "amazon-connect-implement",
+  "version": "1.0.0",
+  "description": "A project demonstrating the implementation of Amazon Connect Call Center Flow and Integration with Lambda and DynamoDB",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build-es": "node build.js",
+    "build-ts": "tsc",
+    "clean": "rm -rf dist",
+    "copy-files": "cp -r ./package.json dist/",
+    "zip": "cd dist && npm i --omit=dev && zip -r ./lambda-sqs-to-ddb.zip .",
+    "prepare-dist": "npm run clean && mkdir -p dist && npm run copy-files && npm run build-ts && npm run zip",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manvinderjit/amazon-connect-implement.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/manvinderjit/amazon-connect-implement/issues"
+  },
+  "homepage": "https://github.com/manvinderjit/amazon-connect-implement#readme",
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.828.0",
+    "@aws-sdk/lib-dynamodb": "^3.828.0",
+    "@types/aws-lambda": "^8.10.149",
+    "@types/node": "^24.0.1",
+    "esbuild": "^0.25.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "uuid": "^11.1.0",
+    "zod": "^3.25.64"
+  }
+}
