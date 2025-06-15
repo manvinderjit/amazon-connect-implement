@@ -6,12 +6,14 @@ import { SQSEvent, SQSRecord, Context, Callback, Handler } from "aws-lambda";
 
 const messageSchema = z.object({
   phoneNumber: z.string().min(1),
-  timestamp: z.string().min(1),
   targetNumber: z.string().min(1),
+  timestamp: z.string().min(1),
   vanityNumbers: z.object({
     first: z.string(),
     second: z.string(),
     third: z.string(),
+    fourth: z.string(),
+    fifth: z.string(),
   }),
 });
 
@@ -22,11 +24,14 @@ const dynamo = DynamoDBDocumentClient.from(client);
 const tableName = process.env.TABLE_NAME;
 
 async function processMessageAsync(message: SQSRecord): Promise<void> {
+  // TODO: Use UUID here or in the first lambda
   let insertID = "";
 
   try {
     const data = JSON.parse(message.body);
-    data.vanityNumbers = JSON.parse(data.vanityNumbers);
+    if (typeof data.vanityNumbers === "string") {
+      data.vanityNumbers = JSON.parse(data.vanityNumbers);
+    }
     const validatedData = messageSchema.parse(data);
 
     insertID = `${validatedData.phoneNumber}-${validatedData.timestamp}`;
@@ -52,6 +57,7 @@ async function processMessageAsync(message: SQSRecord): Promise<void> {
       console.error("Validation failed:", err.errors);
       throw err;
     } else {
+      // Production: Send to DLQ or log for monitoring
       console.error("Failed to process message:", {
         errorMessage: err.message,
         stack: err.stack,
@@ -71,12 +77,12 @@ export const handler: Handler<SQSEvent, void> = async (
     try {
       await processMessageAsync(message);
     } catch (err: any) {
+      // Production: Send to DLQ or log for monitoring
       console.error("Error processing individual message", {
         messageId: message.messageId,
         body: message.body,
         error: err.message,
       });
-      // Optional: Send to DLQ or alert
     }
   }
 };
