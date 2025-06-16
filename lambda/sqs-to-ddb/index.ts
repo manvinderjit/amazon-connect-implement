@@ -5,9 +5,9 @@ import { z } from "zod";
 import { SQSEvent, SQSRecord, Context, Callback, Handler } from "aws-lambda";
 
 const messageSchema = z.object({
-  phoneNumber: z.string().min(1),
-  targetNumber: z.string().min(1),
-  timestamp: z.string().min(1),
+  phoneNumber: z.string().min(10),
+  targetNumber: z.string().min(10),
+  timestamp: z.string(),
   vanityNumbers: z.object({
     first: z.string(),
     second: z.string(),
