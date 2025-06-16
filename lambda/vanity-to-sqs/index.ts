@@ -9,6 +9,25 @@ interface DigitToLetters {
   [key: number]: string[];
 }
 
+// Define the event and response types
+interface Event {
+  Details: {
+    ContactData: {
+      CustomerEndpoint: {
+        Address: string;
+      };
+      Attributes: {
+        TargetNumber: string;
+      };
+    };
+  };
+}
+
+interface Response {
+  ssmlResponse: string;
+  ssmlError: string;
+}
+
 // Phone keypad mapping
 const digitToLetters: DigitToLetters = {
   2: ["A", "B", "C"],
@@ -176,55 +195,18 @@ const sendNumbersToQueue = async (message: object): Promise<void> => {
   }
 };
 
-// Convert the set to an array and map it to the desired object
-const convertSetToJsonObject = (
-  stringSet: Set<string>
-): {
-  first?: string;
-  second?: string;
-  third?: string;
-  fourth?: string;
-  fifth?: string;
-} => {
-  // Ensure the set is not empty
-  if (!stringSet || stringSet.size === 0) {
-    throw new Error("The input set must contain at least one string.");
-  }
+const filterFiveResultsAndPrepend = (
+  vanityNumbersSet: Set<String>,
+  leadingDigits: string
+): string[] => {
+  // Convert Set to an array
+  const setArray = [...vanityNumbersSet];
 
-  // Define the shape for the accumulator object
-  const jsonObject: { [key: string]: string } = {};
+  // Slice the first 5 items and prepend some letters
+  const result = setArray.slice(0, 5).map((item) => `${leadingDigits}-${item}`);
 
-  // Convert the set to an array and map it to the desired object
-  [...stringSet].forEach((curr, index) => {
-    const keys = ["first", "second", "third", "fourth", "fifth"];
-
-    // Stop if we have more than 5 items
-    if (index < keys.length) {
-      jsonObject[keys[index]] = curr;
-    }
-  });
-
-  return jsonObject;
+  return result;
 };
-
-// Define the event and response types
-interface Event {
-  Details: {
-    ContactData: {
-      CustomerEndpoint: {
-        Address: string;
-      };
-      Attributes: {
-        TargetNumber: string;
-      };
-    };
-  };
-}
-
-interface Response {
-  ssmlResponse: string;
-  ssmlError: string;
-}
 
 export const handler = async (event: Event): Promise<Response> => {
   try {
@@ -238,6 +220,9 @@ export const handler = async (event: Event): Promise<Response> => {
     if (!phoneNumber || !targetNumber) {
       throw new Error("invalidNumber");
     }
+
+    // Keep the remaining leading digits to add them later
+    const phoneNumberLeadingDigits = targetNumber.slice(0, -7);
 
     // Get last 7 digits of the phone number
     const phoneNumberDigitsToConvert = targetNumber.slice(-7);
@@ -278,32 +263,41 @@ export const handler = async (event: Event): Promise<Response> => {
       fallbackRandomLetters(phoneNumberDigitsToConvert, generatedVanityNumbers);
     }
 
-    // Sort vanity numbers so in descending order of alphabets they contain, most alphabets first
-    generatedVanityNumbers = sortedVanityNumbers([...generatedVanityNumbers]) as unknown as Set<string>;
+    // Sort vanity numbers in descending order of alphabets they contain, most alphabet-containing number first
+    generatedVanityNumbers = sortedVanityNumbers([
+      ...generatedVanityNumbers,
+    ]) as unknown as Set<string>;
 
-    // Convert set to object to send to SQS queue
-    const vanityNumbersObject = convertSetToJsonObject(generatedVanityNumbers);
+    // Convert set to Array and Prepending Leading Digits    
+    const vanityNumbersArray = filterFiveResultsAndPrepend(generatedVanityNumbers, phoneNumberLeadingDigits);
 
+    // Prepare message to send to SQS queue
     const messageToQueue = {
       phoneNumber: phoneNumber,
       targetNumber: targetNumber,
       timestamp,
-      vanityNumbers: vanityNumbersObject,
+      vanityNumbers: {
+        first: vanityNumbersArray[0],
+        second: vanityNumbersArray[1],
+        third: vanityNumbersArray[2],
+        fourth: vanityNumbersArray[3],
+        fifth: vanityNumbersArray[4],
+      },
     };
 
     // Send Message to SQS Queue
     await sendNumbersToQueue(messageToQueue);
 
     const response: Response = {
-      ssmlResponse: `<speak>Your first number is 
+      ssmlResponse: `<speak>The first number is 
       <break time="0.3s"/>
-      <say-as interpret-as="telephone">${vanityNumbersObject.first}</say-as>.
+      <say-as interpret-as="telephone">${vanityNumbersArray[0]}</say-as>.
       <break time="0.7s"/>
       The second number is 
-      <say-as interpret-as="telephone">${vanityNumbersObject.second}</say-as>.
+      <say-as interpret-as="telephone">${vanityNumbersArray[1]}</say-as>.
       <break time="0.7s"/>
       And the third number is 
-      <say-as interpret-as="telephone">${vanityNumbersObject.third}</say-as>.</speak>`,
+      <say-as interpret-as="telephone">${vanityNumbersArray[2]}</say-as>.</speak>`,
       ssmlError: "false",
     };
 
