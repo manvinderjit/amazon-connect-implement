@@ -249,7 +249,7 @@ export const handler = async (event: Event): Promise<Response> => {
     }
 
     // Store words from JSON file if not already present
-    const wordS = await loadWordSet();
+    const wordSet = await loadWordSet();
 
     // Store the generated vanity numbers in a set
     let generatedVanityNumbers = new Set<string>();
@@ -260,14 +260,14 @@ export const handler = async (event: Event): Promise<Response> => {
     );
 
     // Check if there are exact matches
-    const exactMatches = findExactMatches(combinations, wordS);
+    const exactMatches = findExactMatches(combinations, wordSet);
     exactMatches.map((match) => generatedVanityNumbers.add(match));
 
     // If not enough matches use the slidingMatches function to generate alphabets
     if (generatedVanityNumbers.size < 5) {
       findSlidingMatches(
         combinations,
-        wordS,
+        wordSet,
         phoneNumberDigitsToConvert.length - 1,
         generatedVanityNumbers,
         phoneNumberDigitsToConvert
