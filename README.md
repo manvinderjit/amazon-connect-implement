@@ -303,6 +303,11 @@ We need an SQS queue to transfer messages between the two lambda functions.
     - Edit the Lambda role that was create with this Lambda function to give the required permissions to access the **SQS QUEUE**. Use ```Allow: sqs:*``` or select individual permissions as required.
 
 4. **Set Up Second Lambda function** 
+
+      ```
+        This Lambda must have 256MB of memory instead of the minimum 128MB for it to function properly as it loads the json wordset. Please make this change when creating the Lambda function.
+      ```
+
     - Create the second Lambda function in your AWS console with ```Node.js 22.x``` as the runtime and upload the file ```lambda-sqs-to-ddb.zip``` located at ```~/amazon-connect-implement/lambda/sqs-to-ddb/dist/``` to deploy the code.  Ensure the option ```Create a new role with basic Lambda permissions``` is selected to create the **execution role** for it.
 
     - Add the env variable ```TABLE_NAME``` in second Lambda function and specify the ```Name``` of the DynamoDB table.
