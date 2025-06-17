@@ -60,6 +60,165 @@ The contact flow can be seen in the following compiled image. A JSON file for th
 
 ![alt text](ContactFlowVanity.png)
 
+## Vanity Number Generation
+
+### 1. Package Used 
+
+`Word-List` is the library used to check for valid english words. It contains around `275,000` english words. They are saved in the `wordset.json` file which is available inside the lambda zipfile. The words in it have a minimum of `2 alphabets each`.
+
+### 2. Conversion
+
+Only the last `7 digits` of a number are converted to generate a vanity numbers.
+
+*Note: The vanity number generation process needs to be improved. I was working on trying different mechanism for generation of vanity numbers. Due to a lack of time, I just clubbed them together.*
+
+
+
+### 2.a) **First Generation Function**: 
+The first function shown by the following code generates all possible `7-digit` combinations by converting digits to alphabets. The generated words are filtered based on which of the words are available in the wordset.
+
+```
+const cartesian = (arr: string[][]): string[][] => {
+  return arr.reduce<string[][]>(
+    (a, b) => a.flatMap((d) => b.map((e) => [...d, e])),
+    [[]]
+  );
+};
+
+// Generate all letter combinations from a phone number
+const generateAllFullLengthCombinations = (digits: string): string[] => {
+  const chars = digits.split("").map((d) => digitToLetters[parseInt(d)] || []);
+  return cartesian(chars).map((arr) => arr.join(""));
+};
+```
+
+### 2.b) **Second Generation Function**: 
+
+If we don't have 5 words, we call the second function. 
+
+```
+// Find matches with sliding window that may have a lower word count
+const findSlidingMatches = (
+  combinations: string[],
+  wordlist: Set<string>,
+  windowSize: number,
+  matches: Set<string> = new Set(),
+  number: string
+): Set<string> => {
+  if (windowSize > 1) {
+    for (const word of combinations) {
+      for (let start = 0; start <= word.length - windowSize; start++) {
+        const subLeadingWord = word.slice(0, start) ?? null;
+        const subWord = word.slice(start, start + windowSize);
+        const subTrailingWord = word.slice(start + windowSize) ?? null;
+
+        if (wordlist.has(subWord)) {
+          matches.add(
+            `${
+              subLeadingWord && wordlist.has(subLeadingWord)
+                ? subLeadingWord
+                : number.slice(0, start)
+            }${subWord}${
+              subTrailingWord && wordlist.has(subTrailingWord)
+                ? subTrailingWord
+                : number.slice(start + windowSize)
+            }`
+          );
+        }
+      }
+    }    
+    return findSlidingMatches(combinations, wordlist, windowSize - 1, matches, number);
+  } else {
+    return matches;
+  }
+};
+```
+
+Its working is explained in the folowing steps.
+   
+
+- It loops through all words in `combinations`.
+- For each `word`, it slides a window of size `windowSize` across it ranging from `6` to `2`, meaning it can find sub-words that can have 2 to 6 alphabets. If there are any alphabets before the window, they are stored as the `prefix`. If there are any alphabets after the window, they are stored as the `suffix`. 
+- For every substring (subWord) of that size:
+   - If it's found in the wordlist, it's considered a match.
+   - It attempts to reconstruct a new string:
+      - If the prefix and suffix are also in the wordlist, use them.
+      - Otherwise, use the digits from the original number.
+- It recursively repeats the above with smaller window sizes until windowSize == 1.
+
+   #### Example 1
+- E.g., if we have a word `AHELLOX` from the last 7 digits of the phone number `2435569`:
+   - We start with a `windowSize` of `6`, and can form the following words:
+      - **AHELLO**: 
+         - `prefix` = null;
+         - `subWord`= AHELLO; 
+         - `suffix`: X         
+      - **HELLOX**: 
+         - `prefix`= A; 
+         - `subWord`= HELLOX; 
+         - `suffix`= null
+   - We compared the `subWord` with the `wordset`. Neither of these are valid words present in the dictionary.
+   - The `windowSize` decreases to size `5` and we form the following words:
+      - **AHELL**: 
+         - `prefix`= null; 
+         - `subWord`= AHELL; 
+         - `suffix`= OX         
+      - **HELLO**: 
+         - `prefix`= A; 
+         - `subWord`= HELLO; 
+         - `suffix`= X
+      - **ELLOX**: 
+         - `prefix`= AH; 
+         - `subWord`= ELLOX; 
+         - `suffix`= null
+   - Here `HELLO` is a valid word in `wordset`. Now as we have a positive match, we check if its `prefix`, ***A*** and `suffix`, ***X*** are also in the wordset.
+      They will not be in the wordset because the wordset doesn't have single alphabet words.
+   - We construct a new string based on: `prefix`= A; `subWord`= HELLO; suffix`= X`.
+   - As the `prefix` and `suffix` are not present, hence we will use the original digits of the phone number for but the `subword` is present and we can use its alphabets:
+      - **2HELLO9**
+   - Using this our vanity phone number will be `xxx2HELLO9` where `xxx` represent the leading digits of the phone number.
+
+   #### Example 2
+
+   Let us consider another example wherein we have a phone number `xxx9932275`.
+   - In this case, when we get to a `windowSize` of `4`, we will eventually end up with the following word:
+      - **WYEBARK**
+         - `prefix`= WYE; 
+         - `subWord`= BARK; 
+         - `suffix`= null
+   - Both of the `prefix` and `subWord` will be present in the wordset.
+   - So in this case, we do not conver the prefix to digits but use it as is, thereby having a vanity number of `xxx9932275`.
+
+   #### Further Improvements
+
+   1. Right now, the algorithm has a single window with a prefix and suffix.
+   This algorithm can be further improved by using multiple sliding windows of 
+   smaller sizes.
+   2. We can also find word combinations by replacing ```1``` with ```I``` and ```0``` with ```O``` to find more combinations. e.g., ```217``` can become AIR if 1 is replaced with I, and we can have the vanity number to include as ```A1R```.
+      
+### 2.c) **Third Generation Function**: 
+
+If we still don't have enough vanity numbers, we use the following code to construct them randomly. It doesn't compare the generated words with the `wordset` and will only generate `5` maximum ranomized results.
+
+```
+const fallbackRandomLetters = (
+  number: string,
+  matches: Set<string>
+): Set<string> => {
+  while (matches.size < 5) {
+    const word = number
+      .split("")
+      .map((d) => {
+        const letters = digitToLetters[parseInt(d)] || [d];
+        return letters[Math.floor(Math.random() * letters.length)];
+      })
+      .join("");
+    matches.add(word);
+  }
+  return matches;
+};
+```
+
 ## Getting Started - Installation Instructions
 
 To set up and run the project in your AWS account, follow these steps:
