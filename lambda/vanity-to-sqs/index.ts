@@ -137,19 +137,19 @@ const findSlidingMatches = (
   if (windowSize > 1) {
     for (const word of combinations) {
       for (let start = 0; start <= word.length - windowSize; start++) {
-        const subLeadingWord = word.slice(0, start) ?? null;
+        const prefix = word.slice(0, start) ?? null;
         const subWord = word.slice(start, start + windowSize);
-        const subTrailingWord = word.slice(start + windowSize) ?? null;
+        const suffix = word.slice(start + windowSize) ?? null;
 
         if (wordlist.has(subWord)) {
           matches.add(
             `${
-              subLeadingWord && wordlist.has(subLeadingWord)
-                ? subLeadingWord
+              prefix && wordlist.has(prefix)
+                ? prefix
                 : number.slice(0, start)
             }${subWord}${
-              subTrailingWord && wordlist.has(subTrailingWord)
-                ? subTrailingWord
+              suffix && wordlist.has(suffix)
+                ? suffix
                 : number.slice(start + windowSize)
             }`
           );
