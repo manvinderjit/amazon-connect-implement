@@ -153,7 +153,7 @@ const findSlidingMatches = (
 };
 ```
 
-Its working is explained in the folowing steps.
+Its working is explained in the following steps.
    
 
 - It loops through all words in `combinations`.
@@ -163,9 +163,8 @@ Its working is explained in the folowing steps.
    - It attempts to reconstruct a new string:
       - If the prefix and suffix are also in the wordlist, use them.
       - Otherwise, use the digits from the original number.
-   - Optionally, if the word has digits 0 or 1, we replace them with alphabets `O` and `I`, respectively, using `replaceZeroAndOne()`.
-   - Try matching the transformed `subWordIO` in the wordlist.
-      - If the replaced word exists, we add the original `subword`, `prefix`, or `suffix`, not the replaced words. e.g., ```9217217``` can become `9 AIR AIR` if `1` is replaced with `I`, and we can have the vanity number as ```xxx9A1RA1R```.
+   - Optionally, if the word has digits 0 or 1, we replace them with alphabets `O` and `I`, respectively, using `replaceZeroAndOne()`, to create `replacedWord`, generate `prefixIO`, `subWordIO`, & `suffixIO` from the `replacedWord` and match the transformed `subWordIO` in the wordlist.
+      - If the `subWordIO` exists, we add the original `subword`, `prefix`, or `suffix`, not `prefixIO`, `subWordIO`, or `suffixIO`. e.g., ```9217217``` can become `9 AIR AIR` if `1` is replaced with `I`, and we can have the vanity number as ```xxx9A1RA1R```.
 - It recursively repeats the above with smaller window sizes until windowSize == 1.
 
    #### Example 1
@@ -195,8 +194,8 @@ Its working is explained in the folowing steps.
          - `suffix`= null
    - Here, **Interation 2**, `HELLO` is a valid word in `wordset`. Now as we have a positive match, we check if its `prefix`, ***A*** and `suffix`, ***X*** are also in the wordset.
       They will not be in the wordset because the wordset doesn't have single alphabet words.
-   - We construct a new string based on: `prefix`= A; `subWord`= HELLO; suffix`= X`.
-   - As the `prefix` and `suffix` are not present, hence we will use the original digits of the phone number for but the `subword` is present and we can use its alphabets:
+   - We construct a new string based on: `prefix`= ***A***; `subWord`= ***HELLO***; `suffix`= ***X***.
+   - As the `prefix` and `suffix` are not present, hence we will use the original digits of the phone number for but the `subword` is present and we can use its alphabets, forming the word:
       - **2HELLO9**
    - Using this our vanity phone number will be `xxx2HELLO9` where `xxx` represent the leading digits of the phone number.
 
@@ -209,7 +208,7 @@ Its working is explained in the folowing steps.
          - `subWord`= BARK; 
          - `suffix`= null
    - Both of the `prefix` and `subWord` will be present in the wordset.
-   - So in this case, we do not convert the prefix to digits but use it as is, thereby having the vanity number `xxx WYE BARK`.
+   - So in this case, we do not convert the `prefix` to digits but use it as is, thereby having the vanity number `xxx WYE BARK`.
 
    #### Example 3
 
@@ -220,8 +219,8 @@ Its working is explained in the folowing steps.
          - `subWord`= B1RK; 
          - `suffix`= null
    - The `subWord` as such will not be present.
-   - However, the string contains `1` and it will be replaced with `I`. After replacement we convert `WYEB1RK` to `WYEBIRK`. We get the following condition:
-      - **WYEBARK**
+   - However, the string contains `1` and it will trigger its replacement with `I`. After replacement we convert `WYEB1RK` to `WYEBIRK` as the `replacedWord`. We get the following by slicing the `replacedWord`:
+      - **WYEBIRK**
           - `prefixIO`= WYE; 
           - `subWordIO`= BIRK; 
           - `suffixIO`= null
@@ -424,7 +423,7 @@ Here are some of the challenges that I overcame during the development of this p
    - Can choose to announce the returned vanity numbers again.
    - The flow is also modified to handle incorrect inputs or handle timeouts.
 
-3. **Data Type Issues**: I faced a unique challenge when returning JSON data from the lambda function, wherein the returned object contained a boolean field. I wanted to use this for determining success or failure conditions and announce the appropriate attribute. But the Contact Flow attributes only accept strings and I was passing boolean in the JSON object. It was a bit tricky to figure this out and pass ```ssmlError``` as string instead of boolean.
+3. **Data Type Issues**: I faced a unique challenge when returning JSON data from the lambda function, wherein the returned object contained a boolean field. I wanted to use this for determining ***success*** or ***failure*** of the vanity number generating lambda and announce the appropriate response returned. But the Contact Flow attributes only accept strings and I was passing boolean in the JSON object. It was a bit tricky to figure this out and pass ```ssmlError``` as string instead of boolean.
 
 
 ## Production Improvements
