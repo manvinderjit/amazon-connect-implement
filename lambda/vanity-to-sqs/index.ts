@@ -144,15 +144,34 @@ const findSlidingMatches = (
         if (wordlist.has(subWord)) {
           matches.add(
             `${
-              prefix && wordlist.has(prefix)
-                ? prefix
-                : number.slice(0, start)
+              prefix && wordlist.has(prefix) ? prefix : number.slice(0, start)              
             }${subWord}${
               suffix && wordlist.has(suffix)
                 ? suffix
                 : number.slice(start + windowSize)
             }`
           );
+        }
+        // Replace digit 0 with alphabet O and 1 with alphabet I, if present
+        if (/[01]/.test(word)) {
+          const replacedWord = replaceZeroAndOne(word);
+          const prefixIO = replacedWord.slice(0, start) ?? null;
+          const subWordIO = replacedWord.slice(start, start + windowSize);
+          const suffixIO = replacedWord.slice(start + windowSize) ?? null;
+
+          if (wordlist.has(subWordIO)) {
+            matches.add(
+              `${
+                prefixIO && wordlist.has(prefixIO)
+                  ? prefix
+                  : number.slice(0, start)
+              }${subWord}${
+                suffix && wordlist.has(suffixIO)
+                  ? suffix
+                  : number.slice(start + windowSize)
+              }`
+            );
+          }
         }
       }
     }    

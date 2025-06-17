@@ -108,22 +108,41 @@ const findSlidingMatches = (
   if (windowSize > 1) {
     for (const word of combinations) {
       for (let start = 0; start <= word.length - windowSize; start++) {
-        const subLeadingWord = word.slice(0, start) ?? null;
+        const prefix = word.slice(0, start) ?? null;
         const subWord = word.slice(start, start + windowSize);
-        const subTrailingWord = word.slice(start + windowSize) ?? null;
+        const suffix = word.slice(start + windowSize) ?? null;
 
         if (wordlist.has(subWord)) {
           matches.add(
             `${
-              subLeadingWord && wordlist.has(subLeadingWord)
-                ? subLeadingWord
-                : number.slice(0, start)
+              prefix && wordlist.has(prefix) ? prefix : number.slice(0, start)
             }${subWord}${
-              subTrailingWord && wordlist.has(subTrailingWord)
-                ? subTrailingWord
+              suffix && wordlist.has(suffix)
+                ? suffix
                 : number.slice(start + windowSize)
             }`
           );
+        }
+        // Replace zeros with alphabet 0 and one with alphabet I
+        if (/[01]/.test(word)) {
+          const replacedWord = replaceZeroAndOne(word);
+          const prefixIO = replacedWord.slice(0, start) ?? null;
+          const subWordIO = replacedWord.slice(start, start + windowSize);
+          const suffixIO = replacedWord.slice(start + windowSize) ?? null;
+
+          if (wordlist.has(subWordIO)) {
+            matches.add(
+              `${
+                prefixIO && wordlist.has(prefixIO)
+                  ? prefix
+                  : number.slice(0, start)
+              }${subWord}${
+                suffix && wordlist.has(suffixIO)
+                  ? suffix
+                  : number.slice(start + windowSize)
+              }`
+            );
+          }
         }
       }
     }    
@@ -144,6 +163,9 @@ Its working is explained in the folowing steps.
    - It attempts to reconstruct a new string:
       - If the prefix and suffix are also in the wordlist, use them.
       - Otherwise, use the digits from the original number.
+   - Optionally, if the word has digits 0 or 1, we replace them with alphabets `O` and `I`, respectively, using `replaceZeroAndOne()`.
+   - Try matching the transformed `subWordIO` in the wordlist.
+      - If the replaced word exists, we add the original `subword`, `prefix`, or `suffix`, not the replaced words. e.g., ```9217217``` can become `9 AIR AIR` if `1` is replaced with `I`, and we can have the vanity number as ```xxx9A1RA1R```.
 - It recursively repeats the above with smaller window sizes until windowSize == 1.
 
    #### Example 1
@@ -189,12 +211,28 @@ Its working is explained in the folowing steps.
    - Both of the `prefix` and `subWord` will be present in the wordset.
    - So in this case, we do not convert the prefix to digits but use it as is, thereby having the vanity number `xxx WYE BARK`.
 
+   #### Example 3
+
+   Let us consider another example wherein we have a phone number `xxx9932175`.
+   - In this case, when we get to a `windowSize` of `4`, we will eventually end up with the following word for the last 7 digits:
+      - **WYEB1RK**
+         - `prefix`= WYE; 
+         - `subWord`= B1RK; 
+         - `suffix`= null
+   - The `subWord` as such will not be present.
+   - However, the string contains `1` and it will be replaced with `I`. After replacement we convert `WYEB1RK` to `WYEBIRK`. We get the following condition:
+      - **WYEBARK**
+          - `prefixIO`= WYE; 
+          - `subWordIO`= BIRK; 
+          - `suffixIO`= null
+   - Both of the `prefixIO` and `subWordIO` will be present in the wordset.
+   - So in this case, we combine `prefix` and `subWord` to generate a vanity number `xxx WYE B1RK`. We still want to use the `prefix` and `subword` and not `prefixIO` and `subwordIO` because we need to keep the original digits `1` and `0`, when we return the number to user.
+
    #### Further Improvements
 
    1. Right now, the algorithm has a single window with a prefix and suffix.
    This algorithm can be further improved by using multiple sliding windows of 
-   smaller sizes.
-   2. We can also find word combinations by replacing ```1``` with ```I``` and ```0``` with ```O``` to find more combinations. e.g., ```217``` can become AIR if 1 is replaced with I, and we can have the vanity number to include as ```A1R```.
+   smaller sizes.   
       
 ### 2.c) **Third Generation Function**: 
 
@@ -396,7 +434,7 @@ A few improvements that I would have implemented if I had more time include:
 
 2. **Add DLQ SQS Queue and Deduplication**: I would definitely add a **DLQ SQS queue** to store any SQS messages that are not processed to prevent the loss of message and allow for better troubleshooting. Deduplication to avoid processing messages twice is another consideration that can be achieved either through a FIFO SQS queue or by checking if the table already has the data.
 
-3. **Improve Vanity Generation Code**: The code that used to generate vanity numbers is not efficient and I did want to work on it further, improving the results returned and reducing time complexity. I also wanted to find out word combinations by replacing ```1``` with ```I``` and ```0``` with ```O``` to find more combinations. e.g., ```217``` can become AIR if 1 is replaced with I, and we can have the vanity number to include as ```A1R```.
+3. **Improve Vanity Generation Code**: The code that used to generate vanity numbers is not efficient and I did want to work on it further, improving the results returned and reducing time complexity.
 
 4. **Add Logging**: The solution doesn't have logging capability beyond CloudWatch and adding the same is something that is essential in production.
 
