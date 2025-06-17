@@ -124,6 +124,8 @@ const replaceZeroAndOne = (number: string): string => {
   return replacedWord;
 };
 
+// TODO: Improve Vanity Number Generation
+
 // Find matches with sliding window that may have a lower word count
 const findSlidingMatches = (
   combinations: string[],
@@ -153,8 +155,7 @@ const findSlidingMatches = (
           );
         }
       }
-    }
-    // Ensure the recursive call's result is returned.
+    }    
     return findSlidingMatches(combinations, wordlist, windowSize - 1, matches, number);
   } else {
     return matches;
@@ -191,33 +192,48 @@ const sendNumbersToQueue = async (message: object): Promise<void> => {
     console.log("Success, message sent. MessageID:", data);
   } catch (err) {
     console.error("Error", err);
-    // Production: Log error for monitoring
+    // TODO: Add retries and log error for monitoring
   }
 };
 
+// Convert Set to an array and slice the first 5 items and prepend leading digits
 const filterFiveResultsAndPrepend = (
   vanityNumbersSet: Set<String>,
   leadingDigits: string
 ): string[] => {
-  // Convert Set to an array
+  
   const setArray = [...vanityNumbersSet];
-
-  // Slice the first 5 items and prepend some letters
+  
   const result = setArray.slice(0, 5).map((item) => `${leadingDigits}-${item}`);
 
   return result;
 };
 
+// Validate phone number
+const isValidPhoneNumber = (phone: string) => {
+  if (typeof phone !== "string") return false;
+
+  // Remove + sign if present
+  const digitsOnly = phone.startsWith("+") ? phone.slice(1) : phone;
+
+  // Check if it consists of digits only
+  if (!/^\d+$/.test(digitsOnly)) return false;
+
+  // Check length (international: 10 to 15 digits is typical)
+  const length = digitsOnly.length;
+  return length >= 10 && length <= 15;
+};
+
 export const handler = async (event: Event): Promise<Response> => {
   try {
     const phoneNumber =
-      event.Details.ContactData.CustomerEndpoint.Address || "unknown";
+      event.Details.ContactData.CustomerEndpoint.Address;
     const targetNumber = event.Details.ContactData.Attributes.TargetNumber;
 
     const timestamp = Date.now().toString();
 
-    // Add condition if the frontend did not provide a number and ask to re-enter
-    if (!phoneNumber || !targetNumber) {
+    // Validate phone number and target number
+    if (!phoneNumber || !targetNumber || !isValidPhoneNumber(phoneNumber) || !isValidPhoneNumber(targetNumber)) {
       throw new Error("invalidNumber");
     }
 
