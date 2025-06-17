@@ -218,6 +218,36 @@ const fallbackRandomLetters = (
   return matches;
 };
 ```
+### 3. Determining Best Vanity Numbers
+
+In order to determine the five best vanity numbers for a given number, the following code is used to sort the calculated vanity numbers in descending order based on the `number of alphabets in them`. 
+
+```
+// Count Alphabets in Vanity Number
+const countAlphabets = (str: string): number => {
+  return (str.match(/[A-Za-z]/g) || []).length;
+};
+
+// Sort Vanity Numbers based on the number of alphabets in them
+const sortedVanityNumbers = (strings: string[]): string[] =>
+  strings.sort((a, b) => countAlphabets(b) - countAlphabets(a));
+```
+
+The top five results with the most alphabets are returned using the following code and we prepend the leading digits of the phone number to them.
+```
+const filterFiveResultsAndPrepend = (
+  vanityNumbersSet: Set<String>,
+  leadingDigits: string
+): string[] => {
+  
+  const setArray = [...vanityNumbersSet];
+  
+  const result = setArray.slice(0, 5).map((item) => `${leadingDigits}-${item}`);
+
+  return result;
+};
+```
+
 
 ## Getting Started - Installation Instructions
 
