@@ -38,8 +38,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
-  "dependencies": {
-    "uuid": "^11.1.0",
+  "dependencies": {    
     "zod": "^3.25.64"
   }
 }
