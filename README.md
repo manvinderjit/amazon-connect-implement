@@ -197,3 +197,4 @@ A few improvements that I would have implemented if I had more time include:
 4. **Add Logging**: The solution doesn't have logging capability beyond CloudWatch and adding the same is something that is essential in production.
 5. **Integrate Amazon Lex**: Although this was beyond the scope of the project, integrating Amazon Lex would improve the project further as it would allow for human speech recognition and natural language processing.
 6. **IaC Template**: Right now the depoyment process is manual. I would have created a CloudFormation or Terraform Template to automate the deployment process.
+7. **Add Loops in Contact Flow**: When checking for invalid values, the contact flow currently repeats untill a user does not enter a correct value. A loop or check could be added to limit these invalid interactions.
