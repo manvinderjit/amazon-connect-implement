@@ -148,30 +148,30 @@ Its working is explained in the folowing steps.
 
    #### Example 1
 - E.g., if we have a word `AHELLOX` from the last 7 digits of the phone number `2435569`:
-   - We start with a `windowSize` of `6`, and can form the following words:
-      - **AHELLO**: 
+   - We start with a `windowSize` of `6`, and can form the following words across two iterations of the loop:
+      - **Iteration 1:** **AHELLO**: 
          - `prefix` = null;
          - `subWord`= AHELLO; 
          - `suffix`: X         
-      - **HELLOX**: 
+      - **Iteration 2:** **HELLOX**: 
          - `prefix`= A; 
          - `subWord`= HELLOX; 
          - `suffix`= null
    - We compared the `subWord` with the `wordset`. Neither of these are valid words present in the dictionary.
-   - The `windowSize` decreases to size `5` and we form the following words:
-      - **AHELL**: 
+   - The `windowSize` decreases to size `5` and we form the following words across three iterations of the loop:
+      - **Iteration 1:** **AHELL**: 
          - `prefix`= null; 
          - `subWord`= AHELL; 
          - `suffix`= OX         
-      - **HELLO**: 
+      - **Iteration 2:** **HELLO**: 
          - `prefix`= A; 
          - `subWord`= HELLO; 
          - `suffix`= X
-      - **ELLOX**: 
+      - **Iteration 3:** **ELLOX**: 
          - `prefix`= AH; 
          - `subWord`= ELLOX; 
          - `suffix`= null
-   - Here `HELLO` is a valid word in `wordset`. Now as we have a positive match, we check if its `prefix`, ***A*** and `suffix`, ***X*** are also in the wordset.
+   - Here, **Interation 2**, `HELLO` is a valid word in `wordset`. Now as we have a positive match, we check if its `prefix`, ***A*** and `suffix`, ***X*** are also in the wordset.
       They will not be in the wordset because the wordset doesn't have single alphabet words.
    - We construct a new string based on: `prefix`= A; `subWord`= HELLO; suffix`= X`.
    - As the `prefix` and `suffix` are not present, hence we will use the original digits of the phone number for but the `subword` is present and we can use its alphabets:
@@ -187,7 +187,7 @@ Its working is explained in the folowing steps.
          - `subWord`= BARK; 
          - `suffix`= null
    - Both of the `prefix` and `subWord` will be present in the wordset.
-   - So in this case, we do not conver the prefix to digits but use it as is, thereby having a vanity number of `xxx9932275`.
+   - So in this case, we do not convert the prefix to digits but use it as is, thereby having the vanity number `xxx WYE BARK`.
 
    #### Further Improvements
 
@@ -297,13 +297,18 @@ We need an SQS queue to transfer messages between the two lambda functions.
 
 3. **Set Up First Lambda function** 
    - Create the first Lambda function in your AWS console with ```Node.js 22.x``` as the runtime and upload the file ```lambda-gen-vanity.zip``` located at ```~/amazon-connect-implement/lambda/vanity-to-sqs/dist/``` to deploy the code. Ensure the option ```Create a new role with basic Lambda permissions``` is selected to create the **execution role** for it.
+
     - Add the env variable ```SQS_QUEUE_URL_VANITY_URL``` in this Lambda function and specify the ```URL``` of the SQS queue.
+
     - Edit the Lambda role that was create with this Lambda function to give the required permissions to access the **SQS QUEUE**. Use ```Allow: sqs:*``` or select individual permissions as required.
 
 4. **Set Up Second Lambda function** 
     - Create the second Lambda function in your AWS console with ```Node.js 22.x``` as the runtime and upload the file ```lambda-sqs-to-ddb.zip``` located at ```~/amazon-connect-implement/lambda/sqs-to-ddb/dist/``` to deploy the code.  Ensure the option ```Create a new role with basic Lambda permissions``` is selected to create the **execution role** for it.
+
     - Add the env variable ```TABLE_NAME``` in second Lambda function and specify the ```Name``` of the DynamoDB table.
+
     - Edit the Lambda role that was create with second Lambda function to give the required permissions to access the **DynamoDB Table** and the **SQS QUEUE**. Use ```Allow: dynamodb:*``` and ```Allow: sqs:*```, respectively, or choose permissions as required.
+    
     - Create a **Lambda Trigger** either from the Lambda function or the SQS queue and select the queue or (the Lambda function if creatig in SQS queue) so that this Lambda function is triggered when the SQS queue receives a message.
 
 
@@ -339,11 +344,13 @@ In case of any other issues, please refer to AWS documentation.
 Here are some of the challenges that I overcame during the development of this project:
 
 1. **Working With Amazon Connect**: Although I have worked with AWS before, it is my first time working with Amazon Connect and I had to learn the service and its implementation. AWS documentations helped me fasttrack the process and I must admit I started having fun with the project and further expanded the scope of the project.
+
 2. **Designing Contact Flow**: Desining a contact flow that mimicked a real-world user experience was another interesting part of the aspect. While the scope only required me to return the vanity number based on the calling number, I enhanced the functionality by providing multiple interaction opportunities for the user. They can:
    - Acknowledge that the call is being recorded or choose to disconnect.
    - Enter a number manually instead of using the one they are calling from if they want
    - Can choose to announce the returned vanity numbers again.
    - The flow is also modified to handle incorrect inputs or handle timeouts.
+
 3. **Data Type Issues**: I faced a unique challenge when returning JSON data from the lambda function, wherein the returned object contained a boolean field. I wanted to use this for determining success or failure conditions and announce the appropriate attribute. But the Contact Flow attributes only accept strings and I was passing boolean in the JSON object. It was a bit tricky to figure this out and pass ```ssmlError``` as string instead of boolean.
 
 
@@ -351,9 +358,15 @@ Here are some of the challenges that I overcame during the development of this p
 
 A few improvements that I would have implemented if I had more time include:
 1. **Add more Unit and Integration Tests**: The first thing I would add are more unit and integration tests and follow a Test-Driven-Development (TDD) approach. Right now only the second Lambda function that takes message from the SQS queue and stores its data to DynamoDB has tests. I would add tests for the first lambda function and more tests for the second one.
+
 2. **Add DLQ SQS Queue and Deduplication**: I would definitely add a **DLQ SQS queue** to store any SQS messages that are not processed to prevent the loss of message and allow for better troubleshooting. Deduplication to avoid processing messages twice is another consideration that can be achieved either through a FIFO SQS queue or by checking if the table already has the data.
+
 3. **Improve Vanity Generation Code**: The code that used to generate vanity numbers is not efficient and I did want to work on it further, improving the results returned and reducing time complexity. I also wanted to find out word combinations by replacing ```1``` with ```I``` and ```0``` with ```O``` to find more combinations. e.g., ```217``` can become AIR if 1 is replaced with I, and we can have the vanity number to include as ```A1R```.
+
 4. **Add Logging**: The solution doesn't have logging capability beyond CloudWatch and adding the same is something that is essential in production.
+
 5. **Integrate Amazon Lex**: Although this was beyond the scope of the project, integrating Amazon Lex would improve the project further as it would allow for human speech recognition and natural language processing.
+
 6. **IaC Template**: Right now the depoyment process is manual. I would have created a CloudFormation or Terraform Template to automate the deployment process.
+
 7. **Add Loops in Contact Flow**: When checking for invalid values, the contact flow currently repeats untill a user does not enter a correct value. A loop or check could be added to limit these invalid interactions.
