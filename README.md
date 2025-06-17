@@ -76,7 +76,7 @@ Note: We are assuming all AWS services being created are in the same region and 
 
 ### 1. Set Up Amazon Connect
 
-1. **Create an Amazon Connect instance**: Create an Amazon Connect Instance after logging in your AWS account. [Use the Module 1 of this tutorial provided by AWS for reference](#https://catalog.workshops.aws/amazon-connect-introduction/en-US/module1). Ensure to specify an ***Admin User*** which you will need to log in to your Amazon Connect Instance to access its console.
+1. **Create an Amazon Connect instance**: Create an Amazon Connect Instance after logging in your AWS account. [Use the Module 1 of this tutorial provided by AWS for reference](https://catalog.workshops.aws/amazon-connect-introduction/en-US/module1). Ensure to specify an ***Admin User*** which you will need to log in to your Amazon Connect Instance to access its console.
 2. **Set Queue and Routing Profiles**: Using the above tutorial, do the following for this step:
    - **Hours of Operation**: Set hours of operation or use ```Basic Hours```. Edit them as required. The contact center will be available during these hours.
    - **Create Queue**: Create one queue called ```Vanity Numbers``` and select the ***Hours of Operation*** for it. Select the one create in the previous step. Refer the to the previous tutorial for detailed steps but we only need one queue for this project whereas the tutorial creates two queues.
