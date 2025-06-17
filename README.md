@@ -1,4 +1,4 @@
-# Amazon Connect Conatact Flow Implementation Demonstration
+# Amazon Connect Contact Flow Implementation Demonstration
 A project demonstrating the implementation of Amazon Connect Contact Center Flow and Integration with Lambda, SQS, and DynamoDB.
 
 ## Overview
